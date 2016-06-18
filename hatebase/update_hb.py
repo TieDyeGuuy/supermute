@@ -99,7 +99,7 @@ def update_word(word, meaning, acronym, context, location):
   hbu['data']['datapoint'][i].update(other_meaning = meaning,
                                      small_acronym = acronym,
                                      primary_contexts = context,
-                                     prymary_location = location)
+                                     primary_location = location)
   next_word += 1
 
 def write_hbu():
