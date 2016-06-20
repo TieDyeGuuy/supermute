@@ -23,7 +23,8 @@
 
   "browser_action": {
     "default_icon": "icons/mute-32.png",
-    "default_title": "Super Mute"
+    "default_title": "Super Mute",
+    "default_popup": "popup/test.html"
   },
 
   "background": {
