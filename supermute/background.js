@@ -235,10 +235,10 @@ function uploadSuccess() {
 
 var topWords = null;
 
+/* Begin organizing data and talking with any active web pages.*/
 function priorityStart() {
   topWords = hate.data.datapoint.filter(generateSorter({"offensiveness": 0.5}));
-  chrome.runtime.onMessage.addListener(testLog);
-  console.log("action listner added");
+  chrome.runtime.onMessage.addListener(mainListener);
   chrome.tabs.query({}, insertScript);
 }
 
@@ -284,14 +284,15 @@ function generateSorter(filters) {
   };
 }
 
-function testLog(message) {
-  console.log("url: " + message.url);
+/* This is the main listener of the addon.*/
+function mainListener(message, sender, sendResponse) {
+  if(message.request === "get words") {
+    sendResponse({"words": topWords});
+  }
 }
 
+/* Function to insert script into each page.*/
 function insertScript(tbs) {
-  console.log(tbs.map(function (t) {
-    return t.id;
-  }).toString());
   for(let t of tbs) {
     chrome.tabs.executeScript(t.id,
                               {file: "content_script.js"});
