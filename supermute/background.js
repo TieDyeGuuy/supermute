@@ -12,7 +12,7 @@
  *   j. restart()
  *   k. interpretStatus()
  *   l. uploadSuccess()
- * 2. Priority words
+ * 2. Content Scripts Connection
  * 999. do stuff*/
 
 /*
@@ -218,7 +218,7 @@ function interpretStatus(status = hatestatus) {
 // l. uploadSuccess()
 /* */
 function uploadSuccess() {
-  priorityStart();
+  connectStart();
 }
 
 /*
@@ -229,14 +229,15 @@ function uploadSuccess() {
 
 /*
  *------------------------------------------------------------------------------
- * 2. Priority words
+ * 2. Content Scripts Connection
  *------------------------------------------------------------------------------
  */
 
 var topWords = null;
+var ports = {};
 
 /* Begin organizing data and talking with any active web pages.*/
-function priorityStart() {
+function connectStart() {
   topWords = hate.data.datapoint.filter(generateSorter({"offensiveness": 0.5}));
   chrome.runtime.onMessage.addListener(mainListener);
   chrome.tabs.query({}, insertScript);
@@ -286,8 +287,18 @@ function generateSorter(filters) {
 
 /* This is the main listener of the addon.*/
 function mainListener(message, sender, sendResponse) {
-  if(message.request === "get words") {
-    sendResponse({"words": topWords});
+  if (message === null || typeof message !== 'object') {
+    throw new Error("Malicious message");
+  }
+  if(message.hasOwnProperty("request")) {
+    switch(message.request) {
+      case "connect":
+        var id = sender.tab.id
+        var p = chrome.tabs.connect(id, {name: id.toString()})
+        ports[id.toString()] = p;
+        p.onMessage.addListener(portListener);
+        break;
+    }
   }
 }
 
@@ -299,9 +310,21 @@ function insertScript(tbs) {
   }
 }
 
+function portListener(message) {
+  if (message === null || typeof message !== 'object') {
+    throw new Error("Malicious message");
+  }
+  if(message.hasOwnProperty("request")) {
+    switch(message.request) {
+      case "get words":
+        ports[message.port].postMessage({response: "words", words: topWords});
+    }
+  }
+}
+
 /*
  *------------------------------------------------------------------------------
- * End priority words
+ * End Content Scripts Connection
  *------------------------------------------------------------------------------
  */
 
