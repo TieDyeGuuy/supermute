@@ -21,7 +21,7 @@ function portListener(message) {
 
 function getWords(topWords) {
   var rword = topWords[getRandomInt(0, topWords.length)].vocabulary;
-  console.log(port.name + rword);
+  console.log(port.name + " " + rword);
 }
 
 function getRandomInt(min, max) {

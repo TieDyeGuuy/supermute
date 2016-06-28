@@ -240,49 +240,9 @@ var ports = {};
 function connectStart() {
   topWords = hate.data.datapoint.filter(generateSorter({"offensiveness": 0.5}));
   chrome.runtime.onMessage.addListener(mainListener);
+  chrome.tabs.onRemoved.addListener(removeListener);
+  chrome.tabs.onUpdated.addListener(updateListener);
   chrome.tabs.query({}, insertScript);
-}
-
-/* as of right now filters are any property of a datapoint in hbu.json
- * the relevant possibilities are as follows:
- * about_class, about_disability, about_ethnicity, about_gender,
- * about_nationality, about_religion, about_sexual_orientation, archaic,
- * number_of_variants, offensiveness, other_meaning, and small_acronym.
- *
- * support for the following filters will come soon:
- * primary_contexts, primary_location, variant_of
- *
- * the parameter filters should be an object where each key is one of the
- * property names listed above and each value is the desired value.
- *
- * the function returns a filter function so that it is easy to filter the
- * datapoint array. More explicitly if you check out this page:
- * http://www.w3schools.com/jsref/jsref_filter.asp
- * then the result of this function is what you would pass to the filter
- * function for example:
- * hate.data.datapoint.filter(generateSorter({"offensiveness": .5,
-                                              "about_class": "1"}));
- * would return an array of all words in the hatebase with an offensiveness
- * greater than or equal to .5 and are about class.*/
-function generateSorter(filters) {
-  return function(item) {
-    for(var prop in filters) {
-      switch(prop) {
-        // TODO create cases for primary_contexts, primary_location
-        // and variant_of.
-        case "offensiveness":
-          if(item[prop] < filters[prop]) {
-            return false;
-          }
-          break;
-        default:
-          if(!(item[prop] === filters[prop])) {
-            return false;
-          }
-      }
-    }
-    return true;
-  };
 }
 
 /* This is the main listener of the addon.*/
@@ -293,8 +253,8 @@ function mainListener(message, sender, sendResponse) {
   if(message.hasOwnProperty("request")) {
     switch(message.request) {
       case "connect":
-        var id = sender.tab.id
-        var p = chrome.tabs.connect(id, {name: id.toString()})
+        var id = sender.tab.id;
+        var p = chrome.tabs.connect(id, {name: id.toString()});
         ports[id.toString()] = p;
         p.onMessage.addListener(portListener);
         break;
@@ -302,11 +262,27 @@ function mainListener(message, sender, sendResponse) {
   }
 }
 
+function removeListener(tabId, removeInfo) {
+  if (ports.hasOwnProperty(tabId.toString())) {
+    ports[tabId.toString()].disconnect();
+    delete ports[tabId.toString()];
+  }
+}
+
+function updateListener(tabId, changeInfo, tab) {
+  if(changeInfo.status === 'complete') {
+    if (!ports.hasOwnProperty(tabId.toString())) {
+      addScript(tabId);
+    } else {
+      // TODO make sure there are no pejoratives on the new page.
+    }
+  }
+}
+
 /* Function to insert script into each page.*/
 function insertScript(tbs) {
   for(let t of tbs) {
-    chrome.tabs.executeScript(t.id,
-                              {file: "content_script.js"});
+    addScript(t.id);
   }
 }
 
@@ -322,11 +298,58 @@ function portListener(message) {
   }
 }
 
+function addScript(tabId) {
+  chrome.tabs.executeScript(tabId,
+                            {file: "content_script.js"});
+}
+
 /*
  *------------------------------------------------------------------------------
  * End Content Scripts Connection
  *------------------------------------------------------------------------------
  */
+
+ /* as of right now filters are any property of a datapoint in hbu.json
+  * the relevant possibilities are as follows:
+  * about_class, about_disability, about_ethnicity, about_gender,
+  * about_nationality, about_religion, about_sexual_orientation, archaic,
+  * number_of_variants, offensiveness, other_meaning, and small_acronym.
+  *
+  * support for the following filters will come soon:
+  * primary_contexts, primary_location, variant_of
+  *
+  * the parameter filters should be an object where each key is one of the
+  * property names listed above and each value is the desired value.
+  *
+  * the function returns a filter function so that it is easy to filter the
+  * datapoint array. More explicitly if you check out this page:
+  * http://www.w3schools.com/jsref/jsref_filter.asp
+  * then the result of this function is what you would pass to the filter
+  * function for example:
+  * hate.data.datapoint.filter(generateSorter({"offensiveness": .5,
+                                               "about_class": "1"}));
+  * would return an array of all words in the hatebase with an offensiveness
+  * greater than or equal to .5 and are about class.*/
+ function generateSorter(filters) {
+   return function(item) {
+     for(var prop in filters) {
+       switch(prop) {
+         // TODO create cases for primary_contexts, primary_location
+         // and variant_of.
+         case "offensiveness":
+           if(item[prop] < filters[prop]) {
+             return false;
+           }
+           break;
+         default:
+           if(!(item[prop] === filters[prop])) {
+             return false;
+           }
+       }
+     }
+     return true;
+   };
+ }
 
 // 999. do stuff
 bang();
