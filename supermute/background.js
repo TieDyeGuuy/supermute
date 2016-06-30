@@ -239,10 +239,16 @@ var ports = {};
 /* Begin organizing data and talking with any active web pages.*/
 function connectStart() {
   topWords = hate.data.datapoint.filter(generateSorter({"offensiveness": 0.5}));
+  chrome.browserAction.onClicked.addListener(bclickListen);
   chrome.runtime.onMessage.addListener(mainListener);
   chrome.tabs.onRemoved.addListener(removeListener);
   chrome.tabs.onUpdated.addListener(updateListener);
+  chrome.tabs.onActivated.addListener(activeListener);
   chrome.tabs.query({}, insertScript);
+}
+
+function bclickListen(tab) {
+  ports[tab.id.toString()].postMessage({request: "search", words: topWords});
 }
 
 /* This is the main listener of the addon.*/
@@ -270,12 +276,23 @@ function removeListener(tabId, removeInfo) {
 }
 
 function updateListener(tabId, changeInfo, tab) {
-  if(changeInfo.status === 'complete') {
+  if (changeInfo.status === 'complete') {
     if (!ports.hasOwnProperty(tabId.toString())) {
       addScript(tabId);
     } else {
-      // TODO make sure there are no pejoratives on the new page.
+      chrome.tabs.query({active: true, currentWindow: true},
+                        function (result) {
+            if (result[0].id === tabId) {
+              ports[message.port].postMessage({request: "search", words: topWords});
+            }
+          });
     }
+  }
+}
+
+function activeListener(activeInfo) {
+  if (ports.hasOwnProperty(activeInfo.tabId.toString())) {
+    ports[activeInfo.tabId.toString()].postMessage({request: "search", words: topWords});
   }
 }
 
@@ -294,6 +311,15 @@ function portListener(message) {
     switch(message.request) {
       case "get words":
         ports[message.port].postMessage({response: "words", words: topWords});
+        break;
+      case "ready":
+        chrome.tabs.query({active: true, currentWindow: true},
+                          function (result) {
+              if (result[0].id.toString() === message.port) {
+                ports[message.port].postMessage({request: "search", words: topWords});
+              }
+            });
+        break;
     }
   }
 }

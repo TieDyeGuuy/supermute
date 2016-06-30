@@ -3,7 +3,7 @@ var port = null;
 function connectListener(p) {
   port = p;
   p.onMessage.addListener(portListener);
-  p.postMessage({request: "get words", port: p.name});
+  p.postMessage({request: "ready", port: p.name});
 }
 
 function portListener(message) {
@@ -13,13 +13,20 @@ function portListener(message) {
   if (message.hasOwnProperty("response")) {
     switch(message.response) {
       case "words":
-        getWords(message.words);
+        blockWord("Yes");
+        break;
+    }
+  }
+  if (message.hasOwnProperty("request")) {
+    switch (message.request) {
+      case "search":
+        blockWord(message.words);
         break;
     }
   }
 }
 
-function getWords(topWords) {
+function blockWord(topWords) {
   var rword = topWords[getRandomInt(0, topWords.length)].vocabulary;
   console.log(port.name + " " + rword);
 }
