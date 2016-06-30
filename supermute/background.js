@@ -283,7 +283,8 @@ function updateListener(tabId, changeInfo, tab) {
       chrome.tabs.query({active: true, currentWindow: true},
                         function (result) {
             if (result[0].id === tabId) {
-              ports[message.port].postMessage({request: "search", words: topWords});
+              ports[message.port].postMessage({request: "search",
+                                               words: topWords});
             }
           });
     }
@@ -292,7 +293,8 @@ function updateListener(tabId, changeInfo, tab) {
 
 function activeListener(activeInfo) {
   if (ports.hasOwnProperty(activeInfo.tabId.toString())) {
-    ports[activeInfo.tabId.toString()].postMessage({request: "search", words: topWords});
+    ports[activeInfo.tabId.toString()].postMessage({request: "search",
+                                                    words: topWords});
   }
 }
 
@@ -316,7 +318,8 @@ function portListener(message) {
         chrome.tabs.query({active: true, currentWindow: true},
                           function (result) {
               if (result[0].id.toString() === message.port) {
-                ports[message.port].postMessage({request: "search", words: topWords});
+                ports[message.port].postMessage({request: "search",
+                                                 words: topWords});
               }
             });
         break;
