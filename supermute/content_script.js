@@ -1,8 +1,7 @@
 var debug = true;
 
-function test(message) {
+function test() {
   if (debug) {console.log(document.URL);}
 }
 
-test(null);
-chrome.runtime.onMessage.addListener(test);
+test();

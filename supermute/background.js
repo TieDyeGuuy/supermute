@@ -69,17 +69,22 @@ function connectStart() {
 
 function updateListener(tabId, changeInfo, tab) {
   if (debug) {console.log("tab: " + tabId + ", status: " + tab.status);}
+  insertScript(tabId);
 }
 
 function bulkScript(arr) {
   for(tab of arr) {
-    chrome.tabs.executeScript(tab.id, {
-      "file": "content_script.js",
-      "runAt": "document_end"
-    }, function (result) {
-      if (debug) {console.log("script executed in tab: " + tab.id);}
-    })
+    insertScript(tab.id);
   }
+}
+
+function insertScript(tabId) {
+  chrome.tabs.executeScript(tabId, {
+    "file": "content_script.js",
+    "runAt": "document_end"
+  }, function (result) {
+    if (debug) {console.log("script executed in tab: " + tabId);}
+  });
 }
 
 /*
