@@ -61,46 +61,25 @@ function uploadSuccess() {
  *------------------------------------------------------------------------------
  */
 
-var ports = {};
-
 /* Begin organizing data and talking with any active web pages.*/
 function connectStart() {
-  chrome.browserAction.onClicked.addListener(bclickListen);
-  chrome.runtime.onMessage.addListener(mainListener);
   chrome.tabs.onUpdated.addListener(updateListener);
-}
-
-function bclickListen(tab) {
-  ports[tab.id.toString()].postMessage({request: "search", words: topWords});
-}
-
-/* This is the main listener of the addon.*/
-function mainListener(message, sender, sendResponse) {
-  if (debug) {console.log("message fire");}
-  chrome.storage.local.get(null, function (result) {
-    if (message["request"]
-        && message["request"] === "words"
-        && result["hatedata"]) {
-      var words = result["hatedata"].data.datapoint.filter(
-          generateSorter(message["filters"]));
-      if (debug) {
-        console.log("words: " + words.map(function(item) {
-          return item.vocabulary;
-        }).toString());
-      }
-      //sendResponse(words)
-    }
-  });
+  chrome.tabs.query({}, bulkScript);
 }
 
 function updateListener(tabId, changeInfo, tab) {
-  if (debug) {console.log(tabId + " " + tab.status + " injection fire");}
-  chrome.tabs.executeScript(tabId, {
-    file: "content_script.js",
-    runAt: "document_end"
-  }, function () {
-    if (debug) {console.log("script executed");}
-  });
+  if (debug) {console.log("tab: " + tabId + ", status: " + tab.status);}
+}
+
+function bulkScript(arr) {
+  for(tab of arr) {
+    chrome.tabs.executeScript(tab.id, {
+      "file": "content_script.js",
+      "runAt": "document_end"
+    }, function (result) {
+      if (debug) {console.log("script executed in tab: " + tab.id);}
+    })
+  }
 }
 
 /*
