@@ -63,8 +63,14 @@ function uploadSuccess() {
 
 /* Begin organizing data and talking with any active web pages.*/
 function connectStart() {
+  chrome.browserAction.onClicked.addListener(bclickListen);
   chrome.tabs.onUpdated.addListener(updateListener);
   chrome.tabs.query({}, bulkScript);
+}
+
+function bclickListen(tab) {
+  console.log("browserAction clicked on tab: " + tab.id);
+  chrome.tabs.sendMessage(tab.id, null);
 }
 
 function updateListener(tabId, changeInfo, tab) {
