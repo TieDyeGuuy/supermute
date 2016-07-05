@@ -6,6 +6,38 @@ function test() {
 
 function getID(message) {
   var node, iter;
+
+  function getSignature(node) {
+    var signature = [], element = node.parentElement
+    if (element.id === "" && element.tagName !== "body") {
+      signature = signature.concat(getSignature(element));
+      if (element.className === "") {
+        signature.push({
+          "type": "tag",
+          "name": element.tagName
+        });
+      } else {
+        signature.push({
+          "type": "class",
+          "name": element.className
+        });
+      }
+    } else {
+      if (element.tagName === "body") {
+        signature.push({
+          "type": "tag",
+          "name": "body"
+        });
+      } else {
+        signature.push({
+          "type": "id",
+          "name": element.id
+        });
+      }
+    }
+    return signature;
+  }
+
   iter = document.createNodeIterator(
       document.body,
       NodeFilter.SHOW_TEXT,
@@ -27,7 +59,9 @@ function getID(message) {
             NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
       });
   while ((node = iter.nextNode())) {
-    console.log(node.parentElement.id);
+    console.log(getSignature(node).map(function (item) {
+      return item.name;
+    }).toString());
   }
 }
 
