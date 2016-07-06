@@ -57,21 +57,31 @@ function connectPorts(message, sender, sendResponse) {
   ports[id.toString()] = {
     "port": port,
     "url": sender.url,
-    "unchanged": true
+    "unchanged": true,
+    "sensored": false
   }
   port.onDisconnect.addListener(function () {
     if (debug) {console.log("disconnecting port " + id);}
     delete ports[id.toString()];
   });
+  if (sender.tab.active) {
+    activeListener({
+      "tabId": id
+    });
+  }
 }
 
 function updateListener(tabId, changeInfo, tab) {
-  var sid = tabId.toString();
-  if (ports[sid]
-      && ports[sid].url === tab.url) {
+  var sid = tabId.toString(), urlMatch, complete;
+  urlMatch = ports[sid] && ports[sid].url === tab.url;
+  complete = tab.status === "complete";
+  if (urlMatch) {
     if (debug) {console.log("script already here in tab " + tabId);}
     ports[sid].unchanged = false;
-  } else if (tab.status === "complete") {
+    if (!complete) {
+      ports[sid].sensored = false;
+    }
+  } else if (complete) {
     if (debug) {console.log("insert new script in tab " + tabId);}
     insertScript(tabId);
   } else {
@@ -85,6 +95,14 @@ function insertScript(tabId) {
     "runAt": "document_end"
   }, function (result) {
     if (debug) {console.log("script executed in tab: " + tabId);}
+  });
+}
+
+function activeListener(activeInfo) {
+  if (debug) {console.log("chain of messages activated tab "
+                          + activeInfo.tabId);}
+  ports[activeInfo.tabId.toString()].port.postMessage({
+    message: "info"
   });
 }
 
@@ -127,9 +145,9 @@ function generateSorter(filters) {
           }
           break;
         case "mild":
-          if (filters[prop] && item.offensiveness > 0.0) {
+          if (filters[prop] === "1" && item.offensiveness > 0.0) {
             return false;
-          } else if (!filters[prop] && item.offensiveness === 0.0) {
+          } else if (filters[prop] === "0" && item.offensiveness === 0.0) {
             return false;
           }
           break;
@@ -143,8 +161,9 @@ function generateSorter(filters) {
   };
 }
 
-// 999. do stuff
+// do stuff
 fixDataCorruption();
 chrome.tabs.query({url: "*://*/*"}, bulkInsert);
 chrome.runtime.onMessage.addListener(connectPorts);
-chrome.tabs.onUpdated.addListener(updateListener)
+chrome.tabs.onUpdated.addListener(updateListener);
+chrome.tabs.onActivated.addListener(activeListener);

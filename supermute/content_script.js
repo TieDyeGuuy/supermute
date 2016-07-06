@@ -71,6 +71,30 @@ function getSignature(node) {
 function connectListen(p) {
   if (debug) {console.log("connect success port: " + p.name);}
   port = p;
+  port.onMessage.addListener(portListen);
+}
+
+function portListen(m) {
+  if (!m["message"]) {
+    return;
+  }
+  if (debug) {console.log("port message received tab " + port.name);}
+  switch (m.message) {
+    case "info":
+      port.postMessage({
+        message: "filters",
+        filters: getInfo()
+      });
+      break;
+  }
+}
+
+function getInfo() {
+  return {
+    "starts_with": "ap",
+    "mild": "1",
+    "about_ethnicity": "1"
+  }
 }
 
 test();
