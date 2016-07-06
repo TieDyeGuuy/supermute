@@ -78,14 +78,18 @@ function portListen(m) {
   if (!m["message"]) {
     return;
   }
-  if (debug) {console.log("port message received tab " + port.name);}
+  if (debug) {console.log("port message received inside tab " + port.name);}
   switch (m.message) {
     case "info":
+      if (debug) {console.log("info");}
       port.postMessage({
-        message: "filters",
-        filters: getInfo()
+        "message": "filters",
+        "filters": getInfo(),
+        "port": port.name
       });
       break;
+    case "words":
+      if (debug) {console.log("words");}
   }
 }
 

@@ -60,6 +60,7 @@ function connectPorts(message, sender, sendResponse) {
     "unchanged": true,
     "sensored": false
   }
+  port.onMessage.addListener(portListener);
   port.onDisconnect.addListener(function () {
     if (debug) {console.log("disconnecting port " + id);}
     delete ports[id.toString()];
@@ -68,6 +69,26 @@ function connectPorts(message, sender, sendResponse) {
     activeListener({
       "tabId": id
     });
+  }
+}
+
+function portListener(m) {
+  if (!m["message"]) {
+    return;
+  }
+  if (debug) {console.log("port message received from tab " + m.port);}
+
+  switch (m.message) {
+    case "filters":
+      function getVocab(wrap) {
+        var words = wrap.hatedata.data.datapoint.filter(
+              generateSorter(m.filters));
+        ports[m.port].port.postMessage({
+          "message": "words",
+          "words": words
+        });
+      }
+      chrome.storage.local.get("hatedata", getVocab);
   }
 }
 
