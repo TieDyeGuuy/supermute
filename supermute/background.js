@@ -4,11 +4,14 @@
 
 var debug = true, ports = {};
 
+/* starts a check to make sure that hatedata is stored locally.*/
 function fixDataCorruption() {
   if (debug) {console.log("update store");}
   chrome.storage.local.get(null, check);
 }
 
+/* this runs the actual check. If the data is not local or it is corrupted
+ * somehow it gets the data from the file that is bundled with the addon.*/
 function check(result) {
   if (!result["hatedata"]) {
     uploadHate();
@@ -25,6 +28,8 @@ function check(result) {
   }
 }
 
+/* This is the function that will retrieve the hatebase data from the local
+ * file.*/
 function uploadHate() {
   var hateURL = chrome.extension.getURL("web_source/hbu.json");
   var xobj = new XMLHttpRequest();
@@ -34,12 +39,16 @@ function uploadHate() {
   xobj.send();
 }
 
+/* upon a successful load of the hatebase data stored in the local file, store
+ * the hatebase data locally so that the user may add new data as they see fit.
+ */
 function transferComplete() {
   if (debug) {console.log("load successful");}
   var hate = JSON.parse(this.responseText);
   chrome.storage.local.set({"hatedata": hate});
 }
 
+/* Takes all relevant tabs and inserts the main content_script.*/
 function bulkInsert(result) {
   if (debug) {console.log("bulkInsert");}
   for (tab of result) {
@@ -47,24 +56,32 @@ function bulkInsert(result) {
   }
 }
 
+/* This is the listener function for when the content_script is ready to
+ * connect via port. It creates the relevant port then stores it in the
+ * variable ports along with other relevant information.
+ * TODO explain ports object structure and purpose.*/
 function connectPorts(message, sender, sendResponse) {
   var id, port;
   id = sender.tab.id;
   if (debug) {console.log("port connect: " + id);}
+  // create port
   port = chrome.tabs.connect(id, {
     name: id.toString()
   });
+  // setup port data
   ports[id.toString()] = {
     "port": port,
     "url": sender.url,
     "unchanged": true,
     "sensored": false
   }
+  // set up port listeners
   port.onMessage.addListener(portListener);
   port.onDisconnect.addListener(function () {
     if (debug) {console.log("disconnecting port " + id);}
     delete ports[id.toString()];
   });
+  // initiate sensoring if the tab is active.
   if (sender.tab.active) {
     activeListener({
       "tabId": id
@@ -72,6 +89,8 @@ function connectPorts(message, sender, sendResponse) {
   }
 }
 
+/* This function listens for messages from a port. It utilizes the port name
+ * in order to know where to send messages back to.*/
 function portListener(m) {
   if (!m["message"]) {
     return;
@@ -89,9 +108,12 @@ function portListener(m) {
         });
       }
       chrome.storage.local.get("hatedata", getVocab);
+      break;
   }
 }
 
+/* This function is the listener for when any tab updates.
+ * TODO explain this better*/
 function updateListener(tabId, changeInfo, tab) {
   var sid = tabId.toString(), urlMatch, complete;
   urlMatch = ports[sid] && ports[sid].url === tab.url;
@@ -110,6 +132,7 @@ function updateListener(tabId, changeInfo, tab) {
   }
 }
 
+/* this does the actual script insertion.*/
 function insertScript(tabId) {
   chrome.tabs.executeScript(tabId, {
     "file": "content_script.js",
@@ -119,9 +142,12 @@ function insertScript(tabId) {
   });
 }
 
+/* This listens for when a tab is activated and determines whether or not to
+ * initiate searching the HTML file for pejorative words from the hatebase.*/
 function activeListener(activeInfo) {
   if (debug) {console.log("chain of messages activated tab "
                           + activeInfo.tabId);}
+  // TODO figure out if tab needs updating.
   ports[activeInfo.tabId.toString()].port.postMessage({
     message: "info"
   });
