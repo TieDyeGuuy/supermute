@@ -2,43 +2,48 @@
  * https://github.com/Posnet/xkcd-substitutions
  */
 
-var debug = true;
+var debug = true, ports = {};
 
 function fixDataCorruption() {
   if (debug) {console.log("update store");}
+  chrome.storage.local.get(null, check);
+}
 
-  function check(result) {
-    if (!result["hatedata"]) {
-      uploadHate();
-    } else {
-      try {
-        var status = result.hatedata.status;
-        if (debug) {
-          console.log("status: " + status);
-          console.log("data already here");
-        }
-      } catch (e) {
-        uploadHate();
+function check(result) {
+  if (!result["hatedata"]) {
+    uploadHate();
+  } else {
+    try {
+      var status = result.hatedata.status;
+      if (debug) {
+        console.log("status: " + status);
+        console.log("data already here");
       }
+    } catch (e) {
+      uploadHate();
     }
   }
+}
 
-  function uploadHate() {
-    var hateURL = chrome.extension.getURL("web_source/hbu.json");
-    var xobj = new XMLHttpRequest();
-    xobj.addEventListener("load", transferComplete);
-    xobj.overrideMimeType("application/json");
-    xobj.open('GET', hateURL);
-    xobj.send();
+function uploadHate() {
+  var hateURL = chrome.extension.getURL("web_source/hbu.json");
+  var xobj = new XMLHttpRequest();
+  xobj.addEventListener("load", transferComplete);
+  xobj.overrideMimeType("application/json");
+  xobj.open('GET', hateURL);
+  xobj.send();
+}
+
+function transferComplete() {
+  if (debug) {console.log("load successful");}
+  var hate = JSON.parse(this.responseText);
+  chrome.storage.local.set({"hatedata": hate});
+}
+
+function bulkInsert(result) {
+  for (tab of result) {
+    insertScript(tab.id);
   }
-
-  function transferComplete() {
-    if (debug) {console.log("load successful");}
-    var hate = JSON.parse(this.responseText);
-    chrome.storage.local.set({"hatedata": hate});
-  }
-
-  chrome.storage.local.get(null, check);
 }
 
 function insertScript(tabId) {
@@ -107,3 +112,4 @@ function generateSorter(filters) {
 
 // 999. do stuff
 fixDataCorruption();
+chrome.tabs.query({url: "*://*/*"}, bulkInsert)
