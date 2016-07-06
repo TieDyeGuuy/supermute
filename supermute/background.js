@@ -1,7 +1,3 @@
-/* new strategy based on:
- * https://github.com/Posnet/xkcd-substitutions
- */
-
 var debug = true, ports = {};
 
 /* starts a check to make sure that hatedata is stored locally.*/

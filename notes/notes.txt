@@ -1,0 +1,2 @@
+Projects I looked at for help and inspiration:
+https://github.com/Posnet/xkcd-substitutions
