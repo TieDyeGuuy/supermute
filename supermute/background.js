@@ -4,21 +4,19 @@
 
 var debug = true;
 
-// b. bang()
 function bang() {
   chrome.storage.local.get(null, start);
 }
 
-// c. start()
 /* This should be what happens first when the addon starts.*/
 function start(result) {
   if (!result["hatedata"]) {
     uploadHate();
   } else {
     try {
-      var hate = result.hatedata;
+      var status = result.hatedata.status;
       if (debug) {
-        console.log("status: " + hate.status);
+        console.log("status: " + status);
         console.log("data already here");
       }
       uploadSuccess();
@@ -28,7 +26,6 @@ function start(result) {
   }
 }
 
-// d. uploadHate()
 /* This function takes the information from hbu.json and makes it accessible
  * to the addon.*/
 function uploadHate() {
@@ -40,7 +37,6 @@ function uploadHate() {
   xobj.send();
 }
 
-// f. transferComplete()
 /* This function is called if an upload from the addon data is successful.
  * If hatedata is not stored locally then it attempts to store it locally.*/
 function transferComplete() {
@@ -50,7 +46,6 @@ function transferComplete() {
   uploadSuccess();
 }
 
-// l. uploadSuccess()
 function uploadSuccess() {
   connectStart();
 }
@@ -61,16 +56,18 @@ function uploadSuccess() {
  *------------------------------------------------------------------------------
  */
 
+var ports = {};
+
 /* Begin organizing data and talking with any active web pages.*/
 function connectStart() {
-  chrome.browserAction.onClicked.addListener(bclickListen);
+  chrome.runtime.onMessage.addListener(firstMessage)
   chrome.tabs.onUpdated.addListener(updateListener);
   chrome.tabs.query({}, bulkScript);
+  chrome.browserAction.onClicked.addListener(bclickListen);
 }
 
-function bclickListen(tab) {
-  console.log("browserAction clicked on tab: " + tab.id);
-  chrome.tabs.sendMessage(tab.id, null);
+function firstMessage(message, sender, sendResponse) {
+  if (debug) {console.log("message received from tab: " + sender.tab.id);}
 }
 
 function updateListener(tabId, changeInfo, tab) {
@@ -82,6 +79,11 @@ function bulkScript(arr) {
   for(tab of arr) {
     insertScript(tab.id);
   }
+}
+
+function bclickListen(tab) {
+  if (debug) {console.log("browserAction clicked on tab: " + tab.id);}
+  chrome.tabs.sendMessage(tab.id, null);
 }
 
 function insertScript(tabId) {

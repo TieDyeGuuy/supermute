@@ -59,11 +59,13 @@ function getID(message) {
             NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
       });
   while ((node = iter.nextNode())) {
-    console.log(getSignature(node).map(function (item) {
+    var sig = getSignature(node).map(function (item) {
       return item.name;
-    }).toString());
+    }).toString();
+    if (debug) {console.log(sig);}
   }
 }
 
 test();
 chrome.runtime.onMessage.addListener(getID);
+chrome.runtime.sendMessage(null);
