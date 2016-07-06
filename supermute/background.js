@@ -47,15 +47,6 @@ function bulkInsert(result) {
   }
 }
 
-function insertScript(tabId) {
-  chrome.tabs.executeScript(tabId, {
-    "file": "content_script.js",
-    "runAt": "document_end"
-  }, function (result) {
-    if (debug) {console.log("script executed in tab: " + tabId);}
-  });
-}
-
 function connectPorts(message, sender, sendResponse) {
   var id, port;
   id = sender.tab.id;
@@ -71,6 +62,29 @@ function connectPorts(message, sender, sendResponse) {
   port.onDisconnect.addListener(function () {
     if (debug) {console.log("disconnecting port " + id);}
     delete ports[id.toString()];
+  });
+}
+
+function updateListener(tabId, changeInfo, tab) {
+  var sid = tabId.toString();
+  if (ports[sid]
+      && ports[sid].url === tab.url) {
+    if (debug) {console.log("script already here in tab " + tabId);}
+    ports[sid].unchanged = false;
+  } else if (tab.status === "complete") {
+    if (debug) {console.log("insert new script in tab " + tabId);}
+    insertScript(tabId);
+  } else {
+    // TODO make sure risky urls are hidden.
+  }
+}
+
+function insertScript(tabId) {
+  chrome.tabs.executeScript(tabId, {
+    "file": "content_script.js",
+    "runAt": "document_end"
+  }, function (result) {
+    if (debug) {console.log("script executed in tab: " + tabId);}
   });
 }
 
@@ -132,4 +146,5 @@ function generateSorter(filters) {
 // 999. do stuff
 fixDataCorruption();
 chrome.tabs.query({url: "*://*/*"}, bulkInsert);
-chrome.runtime.onMessage.addListener(connectPorts)
+chrome.runtime.onMessage.addListener(connectPorts);
+chrome.tabs.onUpdated.addListener(updateListener)
