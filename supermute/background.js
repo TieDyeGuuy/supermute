@@ -63,6 +63,15 @@ function connectPorts(message, sender, sendResponse) {
   port = chrome.tabs.connect(id, {
     name: id.toString()
   });
+  ports[id.toString()] = {
+    "port": port,
+    "url": sender.url,
+    "unchanged": true
+  }
+  port.onDisconnect.addListener(function () {
+    if (debug) {console.log("disconnecting port " + id);}
+    delete ports[id.toString()];
+  });
 }
 
 /* as of right now filters are any property of a datapoint in hbu.json

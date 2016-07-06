@@ -1,4 +1,4 @@
-var debug = true;
+var debug = true, port;
 
 function test() {
   if (debug) {console.log(document.URL);}
@@ -66,8 +66,9 @@ function getID(message) {
   }
 }
 
-function connectListen(port) {
-  if (debug) {console.log("connect success port: " + port.name)}
+function connectListen(p) {
+  if (debug) {console.log("connect success port: " + p.name)}
+  port = p;
 }
 
 test();
