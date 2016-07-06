@@ -41,6 +41,7 @@ function transferComplete() {
 }
 
 function bulkInsert(result) {
+  if (debug) {console.log("bulkInsert");}
   for (tab of result) {
     insertScript(tab.id);
   }
@@ -52,6 +53,15 @@ function insertScript(tabId) {
     "runAt": "document_end"
   }, function (result) {
     if (debug) {console.log("script executed in tab: " + tabId);}
+  });
+}
+
+function connectPorts(message, sender, sendResponse) {
+  var id, port;
+  id = sender.tab.id;
+  if (debug) {console.log("port connect: " + id);}
+  port = chrome.tabs.connect(id, {
+    name: id.toString()
   });
 }
 
@@ -112,4 +122,5 @@ function generateSorter(filters) {
 
 // 999. do stuff
 fixDataCorruption();
-chrome.tabs.query({url: "*://*/*"}, bulkInsert)
+chrome.tabs.query({url: "*://*/*"}, bulkInsert);
+chrome.runtime.onMessage.addListener(connectPorts)

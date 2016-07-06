@@ -66,5 +66,11 @@ function getID(message) {
   }
 }
 
+function connectListen(port) {
+  if (debug) {console.log("connect success port: " + port.name)}
+}
+
 test();
 chrome.runtime.onMessage.addListener(getID);
+chrome.runtime.onConnect.addListener(connectListen);
+chrome.runtime.sendMessage(null);
