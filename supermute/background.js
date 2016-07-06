@@ -4,86 +4,41 @@
 
 var debug = true;
 
-function bang() {
-  chrome.storage.local.get(null, start);
-}
+function fixDataCorruption() {
+  if (debug) {console.log("update store");}
 
-/* This should be what happens first when the addon starts.*/
-function start(result) {
-  if (!result["hatedata"]) {
-    uploadHate();
-  } else {
-    try {
-      var status = result.hatedata.status;
-      if (debug) {
-        console.log("status: " + status);
-        console.log("data already here");
-      }
-      uploadSuccess();
-    } catch (e) {
+  function check(result) {
+    if (!result["hatedata"]) {
       uploadHate();
+    } else {
+      try {
+        var status = result.hatedata.status;
+        if (debug) {
+          console.log("status: " + status);
+          console.log("data already here");
+        }
+      } catch (e) {
+        uploadHate();
+      }
     }
   }
-}
 
-/* This function takes the information from hbu.json and makes it accessible
- * to the addon.*/
-function uploadHate() {
-  var hateURL = chrome.extension.getURL("web_source/hbu.json");
-  var xobj = new XMLHttpRequest();
-  xobj.addEventListener("load", transferComplete);
-  xobj.overrideMimeType("application/json");
-  xobj.open('GET', hateURL);
-  xobj.send();
-}
-
-/* This function is called if an upload from the addon data is successful.
- * If hatedata is not stored locally then it attempts to store it locally.*/
-function transferComplete() {
-  if (debug) {console.log("load successful");}
-  var hate = JSON.parse(this.responseText);
-  chrome.storage.local.set({"hatedata": hate});
-  uploadSuccess();
-}
-
-function uploadSuccess() {
-  connectStart();
-}
-
-/*
- *------------------------------------------------------------------------------
- * 2. Content Scripts Connection
- *------------------------------------------------------------------------------
- */
-
-var ports = {};
-
-/* Begin organizing data and talking with any active web pages.*/
-function connectStart() {
-  chrome.runtime.onMessage.addListener(firstMessage)
-  chrome.tabs.onUpdated.addListener(updateListener);
-  chrome.tabs.query({}, bulkScript);
-  chrome.browserAction.onClicked.addListener(bclickListen);
-}
-
-function firstMessage(message, sender, sendResponse) {
-  if (debug) {console.log("message received from tab: " + sender.tab.id);}
-}
-
-function updateListener(tabId, changeInfo, tab) {
-  if (debug) {console.log("tab: " + tabId + ", status: " + tab.status);}
-  insertScript(tabId);
-}
-
-function bulkScript(arr) {
-  for(tab of arr) {
-    insertScript(tab.id);
+  function uploadHate() {
+    var hateURL = chrome.extension.getURL("web_source/hbu.json");
+    var xobj = new XMLHttpRequest();
+    xobj.addEventListener("load", transferComplete);
+    xobj.overrideMimeType("application/json");
+    xobj.open('GET', hateURL);
+    xobj.send();
   }
-}
 
-function bclickListen(tab) {
-  if (debug) {console.log("browserAction clicked on tab: " + tab.id);}
-  chrome.tabs.sendMessage(tab.id, null);
+  function transferComplete() {
+    if (debug) {console.log("load successful");}
+    var hate = JSON.parse(this.responseText);
+    chrome.storage.local.set({"hatedata": hate});
+  }
+
+  chrome.storage.local.get(null, check);
 }
 
 function insertScript(tabId) {
@@ -94,12 +49,6 @@ function insertScript(tabId) {
     if (debug) {console.log("script executed in tab: " + tabId);}
   });
 }
-
-/*
- *------------------------------------------------------------------------------
- * End Content Scripts Connection
- *------------------------------------------------------------------------------
- */
 
 /* as of right now filters are any property of a datapoint in hbu.json
  * the relevant possibilities are as follows:
@@ -157,4 +106,4 @@ function generateSorter(filters) {
 }
 
 // 999. do stuff
-bang();
+fixDataCorruption();

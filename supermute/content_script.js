@@ -68,4 +68,3 @@ function getID(message) {
 
 test();
 chrome.runtime.onMessage.addListener(getID);
-chrome.runtime.sendMessage(null);
